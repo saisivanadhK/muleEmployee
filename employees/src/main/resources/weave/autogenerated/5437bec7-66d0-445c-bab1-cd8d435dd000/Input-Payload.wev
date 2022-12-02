@@ -1,0 +1,11 @@
+%dw 2.0
+
+type auto_5437bec7_66d0_445c_bab1_cd8d435dd000_Input_Payload = {
+  JobDesc: String, 
+  JobLevel: Number, 
+  Email: String, 
+  EmpName: String, 
+  Location: String, 
+  _?: Any
+}
+

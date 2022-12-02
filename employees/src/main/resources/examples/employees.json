@@ -1,0 +1,22 @@
+[
+  {
+    "EID": 1001,
+    "EmpName": "Bruce Wayne",
+    "JobDesc": "Systems Architect",
+    "JobLevel": 5,
+    "DateOfJoining": "20/Feb/2020",
+    "Email": "Bruce.Wayne@dc.com",
+    "Salary": 50000,
+    "Location": "Gotham City"
+  },
+  {
+    "EID": 1002,
+    "EmpName": "Clark Kent",
+    "JobDesc": "Technology Analyst",
+    "JobLevel": 4,
+    "DateOfJoining": "20/Feb/2021",
+    "Email": "Clark.Kent@dc.com",
+    "Salary": 40000,
+    "Location": "Metropolis"
+  }
+]

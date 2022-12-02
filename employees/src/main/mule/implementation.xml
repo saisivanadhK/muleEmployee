@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="32f85ca0-6d5f-4420-9fae-726e802339aa" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="root" database="Employees" />
+	</db:config>
+	<flow name="GetAll" doc:id="0aab6940-e90c-4190-9b23-546041a8e5e5" >
+		<db:select doc:name="Select" doc:id="a168d8f3-eea4-4117-99f7-4fea034436c2" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from employees]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="28eafc5f-7e97-4d68-babf-d5e1399033c5" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	EID: payload01.eid,
+	EmpName: (payload01.first_name default "") ++ (payload01.last_name default ""),
+	JobDesc: payload01.description default "",
+	JobLevel: payload01.job_level default 0,
+	DateOfJoining: payload01.doj as Date{format: "yyyy-MM-dd"} as String {format: "dd/MMM/yyyy"} default "",
+	Email: payload01.email default "",
+	Salary: payload01.salary default 0,
+	Location: payload01.location default ""
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="GetWithIDFlow" doc:id="775e074b-e24c-4cbb-b79a-2fa99c941253" >
+		<db:query-single doc:name="Query single" doc:id="db4f3b6c-e12c-4d4b-a142-a1f255aa83ec" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from employees where eid=:eid]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	eid: vars.EID
+}]]]></db:input-parameters>
+		</db:query-single>
+		<ee:transform doc:name="Transform Message" doc:id="3055e651-5e5c-4664-8869-b10212299e59" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	EmpName: (payload.first_name default "") ++ (payload.last_name default ""),
+	JobDesc: payload.description default "",
+	JobLevel: payload.job_level default 0,
+	DateOfJoining: payload.doj as Date{format: "yyyy-MM-dd"} as String {format: "dd/MMM/yyyy"} default "",
+	Email: payload.email default "",
+	Salary: payload.salary default 0,
+	Location: payload.location default ""
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<sub-flow name="varSubFlow" doc:id="b3f1a56b-d9d6-47d7-a276-3deb5d4e2a60" >
+		<set-variable value="#[message.payload.EmpName]" doc:name="EmpName" doc:id="0d4a7d45-bc75-42ed-952c-9445095c8707" variableName="EmpName"/>
+		<set-variable value="#[message.payload.JobDesc]" doc:name="JobDesc" doc:id="52c03a15-5f4e-4e09-9ef1-e759e4e15fc1" variableName="JobDesc"/>
+		<set-variable value="#[message.payload.JobLevel]" doc:name="JobLevel" doc:id="34c0ccf2-1e6b-4ef4-839f-86f6cac9a3a7" variableName="JobLevel"/>
+		<set-variable value="#[message.payload.DateOfJoining]" doc:name="DateOfJoining" doc:id="2c082317-2eb7-4f00-a1a2-bd02bc4ae27d" variableName="DateOfJoining"/>
+		<set-variable value="#[message.payload.Email]" doc:name="Email" doc:id="31fcd405-e059-4bb7-8edd-2d5d304819a5" variableName="Email"/>
+		<set-variable value="#[message.payload.Salary]" doc:name="Salary" doc:id="33f9dd1f-3eb9-48d9-8ddb-3da7d82a689c" variableName="Salary"/>
+		<set-variable value="#[message.payload.Location]" doc:name="Location" doc:id="18726a7e-df3d-4358-8389-ac5fd06965db" variableName="Location"/>
+	</sub-flow>
+	<flow name="PostFlow" doc:id="c9d2863f-1188-4c7c-bad7-23ade7276bd0" >
+		<flow-ref doc:name="Flow Reference" doc:id="0cf7069a-1516-4cb6-8037-c365189d260c" name="varSubFlow"/>
+		<set-variable value='#[(vars.EmpName splitBy (" ")) [0]]' doc:name="FirstName" doc:id="d4d089d1-a92f-4da2-985a-cc60f5b793e9" variableName="first_name"/>
+		<set-variable value='#[vars.EmpName splitBy(" ")[1]]' doc:name="LastName" doc:id="3bef07e2-4675-4417-914e-9ffe3b598108" variableName="last_name"/>
+		<validation:is-email doc:id="9b41d375-3437-4dc0-a80f-0bac81fb9e32" email='#[vars.Email]'/>
+		<db:insert doc:name="Insert" doc:id="9c9d7957-eba4-4ed5-b4f5-447d0f5125cb" config-ref="Database_Config">
+			<db:sql ><![CDATA[insert into employees (eid,first_name,last_name,description,job_level,doj,email,salary,location)
+values
+(:eid,:first_name,:last_name,:description,:job_level,:doj,:email,:salary,:location)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	eid: vars.EID,
+	first_name: vars.first_name,
+	last_name: vars.last_name,
+	description: vars.JobDesc,
+	job_level: vars.JobLevel,
+	doj: vars.DateOfJoining,
+	email: vars.Email,
+	salary: vars.Salary,
+	location: vars.Location
+}]]]></db:input-parameters>
+		</db:insert>
+	</flow>
+	<flow name="PatchFlow" doc:id="5437bec7-66d0-445c-bab1-cd8d435dd000" >
+		<flow-ref doc:name="Flow Reference" doc:id="246ed644-3593-47f9-875d-677ae6195d64" name="varSubFlow"/>
+		<db:update doc:name="Update" doc:id="edd85407-2fba-4f9a-9262-8b38f05fe86a" config-ref="Database_Config">
+			<db:sql ><![CDATA[update employees set (EmpName=:EmpName,JobDesc=:JobDesc,JobLevel=:JobLevel,Email=:Email,Location=:Location) where EID=:EID]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	EID: vars.EID,
+	EmpName: vars.EmpName,
+	JobDesc: vars.JobDesc,
+	JobLevel: vars.JobLevel,
+	Email: vars.Email,
+	Location: vars.Location
+	}]]]></db:input-parameters>
+		</db:update>
+		<ee:transform doc:name="Transform Message" doc:id="71740477-809c-4aca-9889-6a27ea96ec28" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: "Employees Details Modified Successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
